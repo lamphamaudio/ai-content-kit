@@ -1,0 +1,3 @@
+class GeneratedItem:
+    pass
+

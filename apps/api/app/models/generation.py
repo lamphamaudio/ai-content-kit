@@ -1,0 +1,3 @@
+class Generation:
+    pass
+

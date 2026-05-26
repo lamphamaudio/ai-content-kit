@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Inter, Arial, sans-serif;
+  color: #0b1c30;
+  background: #f8f9ff;
+}
+
+button, input, textarea, select {
+  font: inherit;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.ai-gradient-text {
+  background: linear-gradient(90deg, #4648d4, #39b8fd);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.ai-magic-btn {
+  background: linear-gradient(135deg, #4648d4 0%, #39b8fd 100%);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.ai-magic-btn:hover {
+  box-shadow: 0 4px 15px rgba(70, 72, 212, 0.35);
+  transform: translateY(-1px);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #c7c4d7;
+  border-radius: 9999px;
+}
