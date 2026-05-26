@@ -48,4 +48,23 @@ class OpenAIProvider(AIProvider):
         )
         text = response.output_text.strip()
         data = json.loads(text)
+        data = self._normalize_content_kit(data)
         return ContentKitResponse(prompt_version=prompt_version, **data)
+
+    def _normalize_content_kit(self, data: dict) -> dict:
+        id_prefixes = {
+            "angles": "angle",
+            "hooks": "hook",
+            "scripts": "script",
+            "captions": "caption",
+            "calendar": "day",
+        }
+        for key, prefix in id_prefixes.items():
+            items = data.get(key) or []
+            if not isinstance(items, list):
+                data[key] = []
+                continue
+            for index, item in enumerate(items, start=1):
+                if isinstance(item, dict) and not item.get("id"):
+                    item["id"] = f"{prefix}-{index}"
+        return data
