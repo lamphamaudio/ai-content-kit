@@ -4,7 +4,7 @@ from openai import AsyncOpenAI
 
 from app.core.config import settings
 from app.providers.base import AIProvider
-from app.schemas.generation import GenerateRequest, GeneratedItem
+from app.schemas.generation import ContentKitResponse, GenerateRequest, GeneratedItem
 
 
 class OpenAIProvider(AIProvider):
@@ -34,3 +34,18 @@ class OpenAIProvider(AIProvider):
             GeneratedItem(id=f"openai-{generation_type}-{index}", kind=generation_type, content=str(content))
             for index, content in enumerate(raw_items, start=1)
         ]
+
+    async def generate_content_kit(self, prompt: str, payload: GenerateRequest, prompt_version: str) -> ContentKitResponse:
+        response = await self.client.responses.create(
+            model=settings.openai_model,
+            instructions=(
+                "You are a senior Vietnamese TikTok Shop content strategist. "
+                "Return only valid JSON matching the requested schema. "
+                "Do not include markdown fences, comments, or extra prose."
+            ),
+            input=prompt,
+            text={"format": {"type": "json_object"}},
+        )
+        text = response.output_text.strip()
+        data = json.loads(text)
+        return ContentKitResponse(prompt_version=prompt_version, **data)

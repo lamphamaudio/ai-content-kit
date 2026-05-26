@@ -1,24 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { generateHooks } from "@/lib/api-client";
-import type { GeneratedItem } from "@/types/generation";
+import { generateContentKit } from "@/lib/api-client";
+import type { ContentKitResponse } from "@/types/generation";
 import type { ProductInput } from "@/types/product";
 
 export function useGeneration() {
-  const [items, setItems] = useState<GeneratedItem[]>([]);
+  const [contentKit, setContentKit] = useState<ContentKitResponse | null>(null);
   const [isLoading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function generate(payload: ProductInput) {
     setLoading(true);
+    setError(null);
     try {
-      const response = await generateHooks(payload);
-      setItems(response.items);
+      const response = await generateContentKit(payload);
+      setContentKit(response);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Generation failed");
     } finally {
       setLoading(false);
     }
   }
 
-  return { items, isLoading, generate };
+  return { contentKit, error, isLoading, generate };
 }
-

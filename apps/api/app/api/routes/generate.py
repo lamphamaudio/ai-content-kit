@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.api.deps import get_ai_service, get_prompt_service, get_usage_service
-from app.schemas.generation import GenerateRequest, GenerateResponse
+from app.schemas.generation import ContentKitRequest, ContentKitResponse, GenerateRequest, GenerateResponse
 from app.services.ai_service import AIService
 from app.services.prompt_service import PromptService
 from app.services.usage_service import UsageService
@@ -41,3 +41,14 @@ async def captions(payload: GenerateRequest, ai: AIService = Depends(get_ai_serv
 async def calendar(payload: GenerateRequest, ai: AIService = Depends(get_ai_service), prompts: PromptService = Depends(get_prompt_service), usage: UsageService = Depends(get_usage_service)):
     return await run_generation("calendar", payload, ai, prompts, usage)
 
+
+@router.post("/content-kit", response_model=ContentKitResponse)
+async def content_kit(
+    payload: ContentKitRequest,
+    ai: AIService = Depends(get_ai_service),
+    prompts: PromptService = Depends(get_prompt_service),
+    usage: UsageService = Depends(get_usage_service),
+):
+    usage.check_quota(user_id=payload.user_id)
+    prompt = prompts.build_content_kit_prompt(payload)
+    return await ai.generate_content_kit(prompt=prompt, payload=payload, prompt_version=prompts.version)

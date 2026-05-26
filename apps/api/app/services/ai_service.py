@@ -1,6 +1,6 @@
 from app.core.config import settings
 from app.providers.openai_provider import OpenAIProvider
-from app.schemas.generation import GenerateRequest, GeneratedItem
+from app.schemas.generation import ContentKitResponse, GenerateRequest, GeneratedItem
 
 
 class AIService:
@@ -14,3 +14,6 @@ class AIService:
 
     async def generate(self, generation_type: str, prompt: str, payload: GenerateRequest) -> list[GeneratedItem]:
         return await self.provider.generate(generation_type, prompt, payload)
+
+    async def generate_content_kit(self, prompt: str, payload: GenerateRequest, prompt_version: str) -> ContentKitResponse:
+        return await self.provider.generate_content_kit(prompt, payload, prompt_version)
