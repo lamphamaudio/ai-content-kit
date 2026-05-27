@@ -4,7 +4,7 @@ from openai import AsyncOpenAI
 
 from app.core.config import settings
 from app.providers.base import AIProvider
-from app.schemas.analysis import ProductAnalysisResponse
+from app.schemas.analysis import ProductAnalysisRequest, ProductAnalysisResponse
 from app.schemas.generation import ContentKitResponse, GenerateRequest, GeneratedItem
 
 
@@ -55,7 +55,7 @@ class OpenAIProvider(AIProvider):
         data = self._normalize_content_kit(data)
         return ContentKitResponse(prompt_version=prompt_version, **data)
 
-    async def analyze_product(self, prompt: str, payload: GenerateRequest) -> ProductAnalysisResponse:
+    async def analyze_product(self, prompt: str, payload: ProductAnalysisRequest | GenerateRequest) -> ProductAnalysisResponse:
         response = await self.client.responses.create(
             model=settings.openai_model,
             instructions=(

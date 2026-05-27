@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from app.schemas.analysis import ProductAnalysisResponse
+from app.schemas.analysis import ProductAnalysisRequest, ProductAnalysisResponse
 from app.schemas.generation import GenerateRequest, GeneratedItem
 
 
@@ -10,5 +10,5 @@ class AIProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def analyze_product(self, prompt: str, payload: GenerateRequest) -> ProductAnalysisResponse:
+    async def analyze_product(self, prompt: str, payload: ProductAnalysisRequest | GenerateRequest) -> ProductAnalysisResponse:
         raise NotImplementedError

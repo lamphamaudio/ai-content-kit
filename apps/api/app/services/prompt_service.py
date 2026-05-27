@@ -1,6 +1,6 @@
 import json
 
-from app.schemas.analysis import ProductAnalysisResponse
+from app.schemas.analysis import ProductAnalysisRequest, ProductAnalysisResponse
 from app.schemas.generation import GenerateRequest
 
 
@@ -15,7 +15,7 @@ class PromptService:
             f"Benefits: {payload.key_benefits or 'not provided'}. Tone: {payload.tone}."
         )
 
-    def build_product_analysis_prompt(self, payload: GenerateRequest) -> str:
+    def build_product_analysis_prompt(self, payload: ProductAnalysisRequest | GenerateRequest) -> str:
         language = payload.language or "vi"
         return f"""
 You are a Vietnamese TikTok Shop affiliate strategist.
