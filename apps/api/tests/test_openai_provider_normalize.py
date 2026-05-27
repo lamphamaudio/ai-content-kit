@@ -19,3 +19,23 @@ def test_normalize_content_kit_adds_missing_ids():
     assert normalized["captions"][0]["id"] == "caption-1"
     assert normalized["calendar"][0]["id"] == "day-1"
 
+
+def test_normalize_product_analysis_converts_string_fields_to_lists():
+    provider = OpenAIProvider.__new__(OpenAIProvider)
+    data = {
+        "product_type": "Serum",
+        "target_customer_insight": "Needs lightweight skincare",
+        "main_pain_points": "Dull skin",
+        "buying_triggers": ["Fast absorption"],
+        "content_angles": None,
+        "risk_claims": "Avoid guaranteed whitening claims",
+        "recommended_video_styles": "Routine demo",
+    }
+
+    normalized = provider._normalize_product_analysis(data)
+
+    assert normalized["main_pain_points"] == ["Dull skin"]
+    assert normalized["content_angles"] == []
+    assert normalized["risk_claims"] == ["Avoid guaranteed whitening claims"]
+    assert normalized["recommended_video_styles"] == ["Routine demo"]
+    assert normalized["compliance_notes"] == []

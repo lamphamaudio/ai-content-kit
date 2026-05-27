@@ -1,5 +1,6 @@
 from app.core.config import settings
 from app.providers.openai_provider import OpenAIProvider
+from app.schemas.analysis import ProductAnalysisResponse
 from app.schemas.generation import ContentKitResponse, GenerateRequest, GeneratedItem
 
 
@@ -17,3 +18,6 @@ class AIService:
 
     async def generate_content_kit(self, prompt: str, payload: GenerateRequest, prompt_version: str) -> ContentKitResponse:
         return await self.provider.generate_content_kit(prompt, payload, prompt_version)
+
+    async def analyze_product(self, prompt: str, payload: GenerateRequest) -> ProductAnalysisResponse:
+        return await self.provider.analyze_product(prompt, payload)
