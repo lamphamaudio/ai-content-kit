@@ -1,4 +1,4 @@
-import type { ContentKitResponse, GenerateResponse } from "@/types/generation";
+import type { ContentKitResponse, GenerateResponse, ProductAnalysisResponse } from "@/types/generation";
 import type { ProductInput } from "@/types/product";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -26,6 +26,13 @@ export function generateHooks(payload: ProductInput) {
 
 export function generateContentKit(payload: ProductInput) {
   return request<ContentKitResponse>("/api/generate/content-kit", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function analyzeProduct(payload: ProductInput) {
+  return request<ProductAnalysisResponse>("/api/analyze/product", {
     method: "POST",
     body: JSON.stringify(payload)
   });

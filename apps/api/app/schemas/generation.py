@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from app.schemas.analysis import ProductAnalysisResponse
 from app.schemas.product import ProductCreate
 
 
@@ -67,6 +68,7 @@ class CalendarItem(BaseModel):
 class ContentKitResponse(BaseModel):
     type: str = "content-kit"
     prompt_version: str
+    analysis: ProductAnalysisResponse | None = None
     product_summary: str
     angles: list[AngleItem]
     hooks: list[HookItem]

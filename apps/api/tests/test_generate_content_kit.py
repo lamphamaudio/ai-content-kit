@@ -2,10 +2,23 @@ from fastapi.testclient import TestClient
 
 from app.api.deps import get_ai_service
 from app.main import app
+from app.schemas.analysis import ProductAnalysisResponse
 from app.schemas.generation import ContentKitResponse
 
 
 class FakeAIService:
+    async def analyze_product(self, prompt, payload):
+        return ProductAnalysisResponse(
+            product_type="Beauty serum",
+            target_customer_insight="Office workers want brighter-looking skin without a sticky morning routine.",
+            main_pain_points=["Dull-looking skin"],
+            buying_triggers=["Light texture", "Easy morning use"],
+            content_angles=["Morning office routine"],
+            risk_claims=["Avoid guaranteed whitening claims"],
+            recommended_video_styles=["Routine demo"],
+            compliance_notes=["Use cautious skincare phrasing"],
+        )
+
     async def generate_content_kit(self, prompt, payload, prompt_version):
         return ContentKitResponse(
             prompt_version=prompt_version,
@@ -41,6 +54,6 @@ def test_generate_content_kit_returns_structured_response():
     assert response.status_code == 200
     data = response.json()
     assert data["type"] == "content-kit"
+    assert data["analysis"]["product_type"] == "Beauty serum"
     assert data["hooks"][0]["id"] == "hook-1"
     assert data["calendar"][0]["day"] == 1
-

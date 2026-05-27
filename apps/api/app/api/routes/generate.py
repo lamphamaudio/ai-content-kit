@@ -50,5 +50,9 @@ async def content_kit(
     usage: UsageService = Depends(get_usage_service),
 ):
     usage.check_quota(user_id=payload.user_id)
-    prompt = prompts.build_content_kit_prompt(payload)
-    return await ai.generate_content_kit(prompt=prompt, payload=payload, prompt_version=prompts.version)
+    analysis_prompt = prompts.build_product_analysis_prompt(payload)
+    analysis = await ai.analyze_product(prompt=analysis_prompt, payload=payload)
+    prompt = prompts.build_content_kit_prompt(payload, analysis)
+    content_kit = await ai.generate_content_kit(prompt=prompt, payload=payload, prompt_version=prompts.version)
+    content_kit.analysis = analysis
+    return content_kit

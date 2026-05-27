@@ -49,9 +49,21 @@ export type CalendarItem = {
   cta: string;
 };
 
+export type ProductAnalysisResponse = {
+  product_type: string;
+  target_customer_insight: string;
+  main_pain_points: string[];
+  buying_triggers: string[];
+  content_angles: string[];
+  risk_claims: string[];
+  recommended_video_styles: string[];
+  compliance_notes?: string[] | null;
+};
+
 export type ContentKitResponse = {
   type: "content-kit";
   prompt_version: string;
+  analysis?: ProductAnalysisResponse | null;
   product_summary: string;
   angles: AngleItem[];
   hooks: HookItem[];

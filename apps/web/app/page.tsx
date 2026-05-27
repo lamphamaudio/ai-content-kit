@@ -6,9 +6,10 @@ import { useGeneration } from "@/hooks/use-generation";
 import type { ContentKitResponse } from "@/types/generation";
 
 type Language = "vi" | "en";
-type TabKey = "angles" | "hooks" | "scripts" | "captions" | "hashtags" | "ctas" | "calendar";
+type TabKey = "analysis" | "angles" | "hooks" | "scripts" | "captions" | "hashtags" | "ctas" | "calendar";
 
 const tabs: Array<{ key: TabKey; vi: string; en: string }> = [
+  { key: "analysis", vi: "AI phân tích", en: "AI Analysis" },
   { key: "angles", vi: "Góc bán", en: "Angles" },
   { key: "hooks", vi: "Hook", en: "Hooks" },
   { key: "scripts", vi: "Kịch bản", en: "Scripts" },
@@ -49,6 +50,20 @@ const copy = {
         audiencePlaceholder: "Ví dụ: Nữ văn phòng 25-35 tuổi",
         benefits: "Lợi ích chính",
         benefitsPlaceholder: "Ví dụ: Dưỡng sáng, thấm nhanh, không bết dính, hợp da dầu",
+        painPoints: "Pain point khách hàng",
+        painPointsPlaceholder: "Ví dụ: Da xỉn màu, da nhìn mệt khi ngồi văn phòng và đi nắng",
+        usp: "USP / điểm khác biệt",
+        uspPlaceholder: "Ví dụ: Texture nhẹ, dễ dùng buổi sáng, hợp người bận rộn",
+        competitor: "Sản phẩm thay thế / đối thủ",
+        competitorPlaceholder: "Ví dụ: Serum vitamin C giá cao hơn hoặc dễ gây bết dính",
+        sellingIntensity: "Phong cách bán hàng",
+        platform: "Nền tảng",
+        duration: "Độ dài video",
+        cta: "CTA mong muốn",
+        ctaPlaceholder: "Ví dụ: Xem sản phẩm ở giỏ hàng",
+        complianceNotes: "Điều cần tránh / compliance notes",
+        complianceNotesPlaceholder: "Ví dụ: Không claim trị nám, không cam kết trắng da nhanh",
+        outputLanguage: "Ngôn ngữ đầu ra",
         tone: "Giọng văn"
       },
       tones: {
@@ -91,6 +106,20 @@ const copy = {
         audiencePlaceholder: "Example: Office women aged 25-35",
         benefits: "Main benefits",
         benefitsPlaceholder: "Example: Brightening, fast absorbing, non-sticky, suitable for oily skin",
+        painPoints: "Customer pain points",
+        painPointsPlaceholder: "Example: Dull skin, tired-looking skin after office work and sun exposure",
+        usp: "USP / differentiation",
+        uspPlaceholder: "Example: Lightweight texture, easy morning routine, good for busy users",
+        competitor: "Alternative / competitor",
+        competitorPlaceholder: "Example: Higher-priced vitamin C serums or sticky formulas",
+        sellingIntensity: "Selling style",
+        platform: "Platform",
+        duration: "Video length",
+        cta: "Desired CTA",
+        ctaPlaceholder: "Example: View the product in the cart",
+        complianceNotes: "Things to avoid / compliance notes",
+        complianceNotesPlaceholder: "Example: Do not claim melasma treatment or fast whitening",
+        outputLanguage: "Output language",
         tone: "Tone"
       },
       tones: {
@@ -204,7 +233,7 @@ export default function HomePage() {
 
               {contentKit ? (
                 <div className="custom-scrollbar flex gap-2 overflow-x-auto border-b border-outline-variant px-6 py-3">
-                  {tabs.map((tab) => (
+                  {tabs.filter((tab) => tab.key !== "analysis" || contentKit.analysis).map((tab) => (
                     <button key={tab.key} className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition ${activeTab === tab.key ? "bg-primary text-white" : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"}`} onClick={() => setActiveTab(tab.key)}>
                       {language === "vi" ? tab.vi : tab.en}
                     </button>
@@ -228,7 +257,7 @@ export default function HomePage() {
                     <p className="mt-2 text-sm">{error}</p>
                   </div>
                 ) : contentKit ? (
-                  <ContentKitTab tab={activeTab} kit={contentKit} copyLabel={t.copyButton} copiedLabel={t.copiedButton} />
+                  <ContentKitTab tab={activeTab} kit={contentKit} language={language} copyLabel={t.copyButton} copiedLabel={t.copiedButton} />
                 ) : (
                   <div className="relative grid h-full place-items-center overflow-hidden rounded-xl border-2 border-dashed border-outline-variant/60 bg-surface/40 p-6 text-center">
                     <div className="glass-panel relative z-10 max-w-md rounded-2xl p-8">
@@ -249,7 +278,60 @@ export default function HomePage() {
   );
 }
 
-function ContentKitTab({ tab, kit, copyLabel, copiedLabel }: { tab: TabKey; kit: ContentKitResponse; copyLabel: string; copiedLabel: string }) {
+function listBody(items: string[]) {
+  return items.map((item) => `- ${item}`).join("\n");
+}
+
+function ContentKitTab({ tab, kit, language, copyLabel, copiedLabel }: { tab: TabKey; kit: ContentKitResponse; language: Language; copyLabel: string; copiedLabel: string }) {
+  if (tab === "analysis") {
+    if (!kit.analysis) return null;
+    const labels = language === "vi" ? {
+      productType: "Loại sản phẩm",
+      insight: "Insight khách hàng",
+      painPoints: "Pain points",
+      triggers: "Buying triggers",
+      angles: "Content angles",
+      risks: "Risk claims",
+      styles: "Recommended video styles",
+      compliance: "Compliance notes",
+      warning: "Lưu ý compliance"
+    } : {
+      productType: "Product type",
+      insight: "Customer insight",
+      painPoints: "Pain points",
+      triggers: "Buying triggers",
+      angles: "Content angles",
+      risks: "Risk claims",
+      styles: "Recommended video styles",
+      compliance: "Compliance notes",
+      warning: "Compliance warning"
+    };
+    const complianceNotes = kit.analysis.compliance_notes ?? [];
+    const warnings = [...kit.analysis.risk_claims, ...complianceNotes];
+    return (
+      <div className="grid gap-3">
+        {warnings.length > 0 ? (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950">
+            <div className="flex items-center gap-2 font-semibold">
+              <span className="material-symbols-outlined text-[20px]">warning</span>
+              {labels.warning}
+            </div>
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm leading-6">
+              {warnings.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}
+            </ul>
+          </div>
+        ) : null}
+        <CopyableCard title={labels.productType} body={kit.analysis.product_type} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+        <CopyableCard title={labels.insight} body={kit.analysis.target_customer_insight} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+        <CopyableCard title={labels.painPoints} body={listBody(kit.analysis.main_pain_points)} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+        <CopyableCard title={labels.triggers} body={listBody(kit.analysis.buying_triggers)} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+        <CopyableCard title={labels.angles} body={listBody(kit.analysis.content_angles)} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+        <CopyableCard title={labels.risks} body={listBody(kit.analysis.risk_claims)} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+        <CopyableCard title={labels.styles} body={listBody(kit.analysis.recommended_video_styles)} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+        {complianceNotes.length > 0 ? <CopyableCard title={labels.compliance} body={listBody(complianceNotes)} copyLabel={copyLabel} copiedLabel={copiedLabel} /> : null}
+      </div>
+    );
+  }
   if (tab === "angles") {
     return <div className="grid gap-3">{kit.angles.map((item) => <CopyableCard key={item.id} title={item.title} meta={item.target_pain_point ?? undefined} body={item.description} copyLabel={copyLabel} copiedLabel={copiedLabel} />)}</div>;
   }
