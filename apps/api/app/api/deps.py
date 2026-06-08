@@ -1,12 +1,18 @@
-from app.core.security import get_current_user_id
+from fastapi import Request
+
+from app.core.security import UserContext, get_current_user, get_current_user_id
 from app.services.ai_service import AIService
 from app.services.analytics_service import AnalyticsService
 from app.services.prompt_service import PromptService
 from app.services.usage_service import UsageService
 
 
-def get_user_id() -> str:
-    return get_current_user_id()
+async def get_user(request: Request) -> UserContext:
+    return await get_current_user(request)
+
+
+async def get_user_id(request: Request) -> str:
+    return await get_current_user_id(request)
 
 
 def get_ai_service() -> AIService:
@@ -23,4 +29,3 @@ def get_usage_service() -> UsageService:
 
 def get_analytics_service() -> AnalyticsService:
     return AnalyticsService()
-

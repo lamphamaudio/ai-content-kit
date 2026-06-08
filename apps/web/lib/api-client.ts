@@ -1,15 +1,19 @@
 import type { ContentKitResponse, GenerateResponse, ProductAnalysisResponse, VideoPromptResponse } from "@/types/generation";
 import type { ProductInput } from "@/types/product";
+import { getSession } from "./auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const session = await getSession();
+  const headers = new Headers(init?.headers);
+  headers.set("Content-Type", "application/json");
+  if (session?.access_token) {
+    headers.set("Authorization", `Bearer ${session.access_token}`);
+  }
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers
-    }
+    headers
   });
   if (!response.ok) {
     throw new Error(`API error ${response.status}`);
