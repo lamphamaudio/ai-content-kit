@@ -1,19 +1,113 @@
 # AI Content Kit Roadmap
 
-Roadmap này mô tả các phase phát triển cho `ai-content-kit`, bắt đầu từ trạng thái hiện tại của repo: Next.js frontend, FastAPI backend, OpenAI provider, form nhập sản phẩm cơ bản và các endpoint generate ban đầu.
+Roadmap này định hướng `ai-content-kit` thành một tool AI cho TikTok Shop seller và affiliate creator: nhập thông tin sản phẩm, nhận phân tích bán hàng, bộ nội dung, prompt video, rồi sau đó mới tiến tới tạo video thật.
 
 Mục tiêu sản phẩm cuối cùng:
 
 ```text
 Nhập thông tin sản phẩm + ảnh
-→ AI phân tích sản phẩm và khách hàng
-→ Sinh angle, hook, script, caption, hashtag, CTA
-→ Sinh prompt video cho Kling / Pika / Runway
-→ Gọi AI video provider
-→ Trả về video draft + nội dung đăng TikTok Shop
+→ AI phân tích sản phẩm, khách hàng, pain point, buying trigger, rủi ro claim
+→ Sinh content kit: angle, hook, script, caption, hashtag, CTA, lịch đăng
+→ Sinh video prompt cho Kling / Pika / Runway / CapCut workflow
+→ Gọi một AI video provider thử nghiệm
+→ Lưu video draft + nội dung đăng TikTok Shop
+→ Theo dõi usage, lịch sử project, copy events, feedback và hiệu quả nội dung
 ```
 
-> Ghi chú: Phase 0 đã được bỏ qua vì dự án sẽ dùng OpenAI thật ngay, không ưu tiên mock provider.
+## Vì sao thứ tự này hợp lý
+
+Roadmap được chỉnh theo 4 thực tế thị trường và kỹ thuật:
+
+1. TikTok Shop và TikTok Ads kiểm soát mạnh misleading claims, prohibited products, AI-generated content disclosure và các ngành rủi ro như beauty, health, weight management, finance, mom/baby.
+2. AI video API là workflow bất đồng bộ, tốn tiền, có trạng thái job, retry, polling/callback và output URL có thể hết hạn. Vì vậy không nên gọi video provider thật trước khi có user, quota, storage và lịch sử job.
+3. Video prompt thủ công là bước MVP tốt: user có thể copy prompt sang Kling/Pika/Runway/CapCut ngay, trong khi sản phẩm vẫn tránh chi phí API video.
+4. Lợi thế cạnh tranh không nằm ở "generate text" đơn giản, mà ở product analysis, compliance, workflow cho TikTok Shop, reusable prompt memory và project history.
+
+Nguồn kiểm tra:
+
+```text
+- TikTok Shop Prohibited Products Policy: https://seller-us.tiktok.com/university/essay?from=policy&identity=1&is_new_connect=0&is_new_user=0&knowledge_id=1399532709988097&role=1
+- TikTok AI-generated content disclosure: https://support.tiktok.com/en/using-tiktok/creating-videos/ai-generated-content
+- TikTok Shop developer ecosystem: https://developers.tiktok.com/blog/tiktok-shop-developer-updates
+- OpenAI Structured Outputs: https://developers.openai.com/api/docs/guides/structured-outputs
+- Runway API and output lifecycle: https://docs.dev.runwayml.com/api and https://docs.dev.runwayml.com/assets/outputs
+- Kling API: https://kling.ai/document-api/apiReference/model/imageToVideo
+- Pika API: https://dev.pika.art/docs/api-reference/generate-turbo-i2v
+- Supabase platform docs: https://supabase.com/docs
+- Supabase Storage: https://supabase.com/docs/guides/storage
+```
+
+## Nguyên tắc sản phẩm
+
+```text
+- Compliance là core feature, không phải ghi chú phụ.
+- Luôn có prompt_version và response schema rõ ràng.
+- Tạo nội dung có thể copy dùng ngay, nhưng tránh claim quá đà.
+- Video generation thật chỉ chạy sau khi có quota, storage và trạng thái job.
+- Ưu tiên một provider video pilot trước, không tích hợp 3 provider cùng lúc.
+- Hỗ trợ workflow thủ công với CapCut/TikTok/Symphony, không chỉ Kling/Pika/Runway.
+- Mỗi khi hoàn thành một phase hoặc một phần đáng kể, phải tạo file Markdown riêng trong docs để ghi lại scope, thay đổi, API/schema, test, quyết định kỹ thuật và việc còn lại.
+```
+
+## Kiến trúc mặc định
+
+Quay lại dùng Supabase làm backend platform chính:
+
+```text
+- Supabase Auth: đăng nhập, user identity, session.
+- Supabase Postgres: database chính cho users, projects, generations, usage, events, assets metadata, video jobs.
+- Supabase Storage: lưu ảnh sản phẩm, video output, export files.
+- Supabase RLS: bảo vệ mọi bảng user-owned trong public schema.
+- Supabase migrations: quản lý schema thay vì sửa database thủ công.
+```
+
+Chroma không thay thế database chính. Nếu sau này cần AI memory/vector search, ưu tiên một trong hai hướng:
+
+```text
+- Dùng pgvector/Supabase Vector trong Postgres để giảm số hệ thống phải vận hành.
+- Hoặc dùng Chroma như lớp vector memory riêng, nhưng chỉ sau khi Postgres schema ổn định.
+```
+
+## Luật ghi tài liệu sau khi hoàn thành
+
+Sau mỗi phase hoặc mỗi phần đáng kể, bắt buộc tách tài liệu thành file `.md` riêng trong `docs/`. Không dồn toàn bộ chi tiết vào roadmap.
+
+Quy ước file:
+
+```text
+docs/phases/phase-01-content-kit.md
+docs/phases/phase-02-product-analysis-compliance.md
+docs/phases/phase-03-supabase-foundation.md
+docs/phases/phase-04-asset-upload.md
+docs/phases/phase-05-video-prompt-kit.md
+docs/phases/phase-06-video-generation-pilot.md
+docs/phases/phase-07-monetization-scale.md
+```
+
+Với các phần nhỏ nằm trong một phase, dùng file riêng theo feature:
+
+```text
+docs/features/supabase-auth.md
+docs/features/usage-quota.md
+docs/features/openai-structured-outputs.md
+docs/features/video-prompt-schema.md
+docs/features/compliance-agent.md
+```
+
+Mỗi file hoàn thành phải có tối thiểu:
+
+```text
+- Mục tiêu
+- Scope đã làm
+- Files/API/schema đã thay đổi
+- Payload/response mẫu nếu có API
+- Cách test thủ công
+- Test tự động đã chạy
+- Quyết định kỹ thuật quan trọng
+- Rủi ro hoặc việc còn lại
+```
+
+Rule này áp dụng cho cả code backend, frontend, database migration, prompt/schema AI, Supabase setup, storage, compliance, và video workflow.
 
 ---
 
@@ -23,19 +117,17 @@ Nhập thông tin sản phẩm + ảnh
 
 Từ một form nhập sản phẩm, tạo ra một bộ content affiliate hoàn chỉnh bằng OpenAI thật.
 
-Flow mong muốn:
+Flow:
 
 ```text
 Product form
 → POST /api/generate/content-kit
-→ OpenAI generate JSON có cấu trúc
+→ OpenAI generate structured JSON
 → Frontend hiển thị theo section/tab
 → User copy từng nội dung
 ```
 
-### Input hiện tại
-
-Repo đang có các field cơ bản:
+### Input cơ bản
 
 ```text
 product_name
@@ -44,269 +136,50 @@ price
 target_audience
 key_benefits
 tone
+language
 ```
 
 ### Backend tasks
 
-#### 1. Thêm endpoint all-in-one
-
-Thêm endpoint:
-
-```http
-POST /api/generate/content-kit
-```
-
-Endpoint này không thay thế các endpoint cũ. Các endpoint sau vẫn giữ lại:
-
-```http
-POST /api/generate/hooks
-POST /api/generate/scripts
-POST /api/generate/captions
-POST /api/generate/calendar
-```
-
-#### 2. Thêm schema response rõ ràng
-
-Tạo các model Pydantic:
-
 ```text
-ContentKitRequest
-AngleItem
-HookItem
-ScriptItem
-CaptionItem
-CalendarItem
-ContentKitResponse
+- Giữ các endpoint cũ: /hooks, /scripts, /captions, /calendar.
+- Thêm POST /api/generate/content-kit.
+- Tạo ContentKitRequest và ContentKitResponse.
+- Output gồm product_summary, angles, hooks, scripts, captions, hashtags, ctas, calendar.
+- Dùng OpenAI Responses API.
+- Ưu tiên Structured Outputs / JSON schema thay vì chỉ prompt "return valid JSON".
+- Nếu provider thiếu id cho item, backend tự sinh id.
 ```
-
-Response shape mong muốn:
-
-```json
-{
-  "type": "content-kit",
-  "prompt_version": "v1",
-  "product_summary": "...",
-  "angles": [],
-  "hooks": [],
-  "scripts": [],
-  "captions": [],
-  "hashtags": [],
-  "ctas": [],
-  "calendar": []
-}
-```
-
-#### 3. Nâng `PromptService`
-
-Thêm method:
-
-```python
-def build_content_kit_prompt(self, payload: GenerateRequest) -> str:
-    ...
-```
-
-Prompt cần yêu cầu OpenAI trả về JSON hợp lệ, không markdown fence, không text ngoài JSON.
-
-Output cần có:
-
-```text
-5 selling angles
-10 hooks
-3 scripts: 15s, 30s, 60s
-3 captions
-15-25 hashtags
-5 CTAs
-7 calendar items
-```
-
-#### 4. Thêm method trong `OpenAIProvider`
-
-Thêm:
-
-```python
-async def generate_content_kit(self, prompt: str, payload: GenerateRequest) -> dict:
-    ...
-```
-
-Yêu cầu:
-
-```text
-- Dùng OpenAI Responses API
-- Dùng settings.openai_model
-- Parse response.output_text bằng json.loads
-- Nếu JSON lỗi, raise lỗi rõ ràng
-- Không phá method generate() hiện tại
-```
-
-#### 5. Thêm method trong `AIService`
-
-Thêm:
-
-```python
-async def generate_content_kit(self, prompt: str, payload: GenerateRequest) -> dict:
-    return await self.provider.generate_content_kit(prompt, payload)
-```
-
-#### 6. Mapping dữ liệu trả về
-
-Trong route `/content-kit`:
-
-```text
-usage.check_quota(user_id=payload.user_id)
-prompt = prompts.build_content_kit_prompt(payload)
-data = await ai.generate_content_kit(prompt, payload)
-map data thành ContentKitResponse
-```
-
-Nếu OpenAI không trả `id`, backend tự sinh id cho từng item.
 
 ### Frontend tasks
 
-#### 1. Thêm type TypeScript
-
-Trong `apps/web/types/generation.ts`, thêm:
-
 ```text
-ContentKitResponse
-AngleItem
-HookItem
-ScriptItem
-CaptionItem
-CalendarItem
-```
-
-#### 2. Thêm API client
-
-Trong `apps/web/lib/api-client.ts`, thêm:
-
-```ts
-export function generateContentKit(payload: ProductInput) {
-  return request<ContentKitResponse>("/api/generate/content-kit", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
-```
-
-Giữ `generateHooks()` để không phá code cũ.
-
-#### 3. Cập nhật hook frontend
-
-Trong `apps/web/hooks/use-generation.ts`, đổi từ `generateHooks()` sang `generateContentKit()`.
-
-State nên đổi thành:
-
-```ts
-const [contentKit, setContentKit] = useState<ContentKitResponse | null>(null);
-const [error, setError] = useState<string | null>(null);
-```
-
-#### 4. Cập nhật UI kết quả
-
-Thêm component mới:
-
-```text
-apps/web/components/content-kit-results.tsx
-```
-
-Hiển thị theo section:
-
-```text
-Tổng quan sản phẩm
-Góc bán hàng
-Hook
-Script
-Caption
-Hashtag
-CTA
-Lịch đăng 7 ngày
-```
-
-Mỗi item nên có nút copy.
-
-#### 5. Cập nhật button và loading text
-
-Đổi button:
-
-```text
-Tạo hook bán hàng
-```
-
-thành:
-
-```text
-Tạo Content Kit
-```
-
-Loading text:
-
-```text
-Đang tạo bộ nội dung...
-```
-
-### Không làm trong Phase 1
-
-```text
-Không upload ảnh
-Không tích hợp Kling / Pika / Runway
-Không tạo video
-Không làm auth thật
-Không làm payment
-Không bắt buộc lưu database
-Không thêm shadcn/ui nếu repo chưa dùng
+- ProductForm gửi payload sang /api/generate/content-kit.
+- UI có tab/section cho summary, angles, hooks, scripts, captions, hashtags, CTAs, calendar.
+- Mỗi item có nút copy.
+- Có loading, error state và copy feedback.
 ```
 
 ### Definition of Done
 
-Phase 1 hoàn thành khi:
-
 ```text
-- Backend có POST /api/generate/content-kit
-- Endpoint gọi OpenAI thật thành công
-- Response đúng schema
-- Frontend gọi endpoint mới
-- UI hiển thị đủ angle, hook, script, caption, hashtag, CTA, calendar
-- User copy được từng nội dung
-- Endpoint cũ không bị hỏng
-```
-
-### Payload test
-
-```json
-{
-  "product_name": "Serum vitamin C sáng da",
-  "category": "Làm đẹp",
-  "price": "199.000đ",
-  "target_audience": "Nữ văn phòng 25-35 tuổi",
-  "key_benefits": "Dưỡng da trước ánh sáng mặt trời mùa hè, giúp da trông tươi hơn, thấm nhanh, không bết dính",
-  "tone": "friendly"
-}
-```
-
-Kỳ vọng:
-
-```text
-- Có product summary tiếng Việt tự nhiên
-- Có 5 angle
-- Có 10 hook
-- Có 3 script: 15s, 30s, 60s
-- Có 3 caption
-- Có 15-25 hashtag
-- Có 5 CTA
-- Có lịch đăng 7 ngày
-- Không có markdown fence
-- Không claim quá đà như "trị nám dứt điểm", "trắng sau 3 ngày", "hiệu quả 100%"
+- Backend có POST /api/generate/content-kit.
+- Response đúng schema.
+- Frontend hiển thị đủ content kit.
+- User copy được từng phần.
+- Endpoint cũ không bị hỏng.
+- Tests không gọi OpenAI thật.
 ```
 
 ---
 
-## Phase 2 — Affiliate Intelligence / Product Analysis Agent
+## Phase 2 — Product Analysis + Compliance Agent
 
 ### Mục tiêu
 
-Tool không chỉ viết content, mà còn phân tích sản phẩm, insight khách hàng, buying trigger và rủi ro claim.
+Tool không chỉ viết content mà còn phân tích sản phẩm, khách hàng, buying trigger và rủi ro claim trước khi tạo content.
 
-Flow mong muốn:
+Flow:
 
 ```text
 Product input
@@ -315,12 +188,10 @@ Product input
 → Buying Triggers
 → Content Angles
 → Compliance Warnings
-→ Content Kit tốt hơn
+→ Content Kit tốt hơn và an toàn hơn
 ```
 
-### Thêm input field
-
-Mở rộng form và schema product:
+### Input mở rộng
 
 ```text
 pain_points
@@ -334,269 +205,198 @@ compliance_notes
 language
 ```
 
-Bản field thực dụng:
-
-```text
-Tên sản phẩm
-Danh mục
-Giá bán
-Khách hàng mục tiêu
-Pain point
-Lợi ích chính
-USP / điểm khác biệt
-Giọng văn
-Phong cách bán hàng
-Nền tảng
-Độ dài video
-CTA
-Điều cần tránh
-```
-
 ### Backend tasks
 
-#### 1. Thêm endpoint phân tích sản phẩm
-
-```http
-POST /api/analyze/product
+```text
+- Thêm POST /api/analyze/product.
+- Tạo ProductAnalysisRequest riêng, không dùng nhầm GenerateRequest.
+- Response gồm product_type, target_customer_insight, main_pain_points, buying_triggers, content_angles, risk_claims, recommended_video_styles, compliance_notes.
+- /api/generate/content-kit chạy product analysis trước rồi mới build content prompt.
+- Compliance Agent cảnh báo claim rủi ro theo category.
 ```
 
-Response:
+### Compliance scope
 
-```json
-{
-  "product_type": "serum skincare",
-  "target_customer_insight": "...",
-  "main_pain_points": [],
-  "buying_triggers": [],
-  "content_angles": [],
-  "risk_claims": [],
-  "recommended_video_styles": []
-}
-```
-
-#### 2. Thêm Compliance Agent đơn giản
-
-Agent cần cảnh báo rủi ro cho các ngành:
+Nhóm cần kiểm soát kỹ:
 
 ```text
-mỹ phẩm
+mỹ phẩm / skincare
 sức khỏe
-giảm cân
+giảm cân / body shape
+supplements
 tài chính
 mẹ và bé
+sản phẩm có testimonial hoặc review cá nhân
 ```
 
-Ví dụ với mỹ phẩm:
+Ví dụ wording an toàn hơn:
 
 ```text
-Không nói trị nám dứt điểm
-Không nói trắng bật tone sau 3 ngày
-Không cam kết hiệu quả tuyệt đối
-Ưu tiên từ: hỗ trợ, giúp da trông, có thể phù hợp, tham khảo
+- Dùng "hỗ trợ", "giúp da trông", "có thể phù hợp", "tham khảo".
+- Tránh "trị dứt điểm", "trắng sau 3 ngày", "hiệu quả 100%", "cam kết khỏi", "chắc chắn kiếm tiền".
+- Nếu nội dung có video/ảnh AI realistic, nhắc user bật AI-generated label khi đăng.
+- Nếu nội dung là review/testimonial, không tạo trải nghiệm giả như "tôi đã dùng và khỏi" khi user không cung cấp trải nghiệm thật.
 ```
-
-#### 3. Tích hợp analysis vào content generation
-
-`/api/generate/content-kit` nên dùng product analysis để sinh nội dung chính xác hơn.
 
 ### Frontend tasks
 
 ```text
-- Thêm field mới vào ProductForm
-- Hiển thị phần "AI phân tích sản phẩm"
-- Hiển thị compliance warning nếu có
-- Cho phép user copy hoặc dùng analysis làm input cho bước sau
+- Thêm field nâng cao vào ProductForm.
+- Hiển thị tab "AI phân tích".
+- Hiển thị risk_claims và compliance_notes nổi bật.
+- Cho phép copy analysis để dùng cho video prompt hoặc brief cho creator.
 ```
 
 ### Definition of Done
 
 ```text
-- User nhập thông tin sản phẩm nâng cao
-- Backend phân tích được pain point, buying trigger, risk claim
-- Content Kit bớt chung chung hơn
-- UI hiển thị cảnh báo claim rủi ro
+- User nhập thông tin sản phẩm nâng cao.
+- Backend phân tích được pain point, buying trigger, content angle, risk claim.
+- Content Kit dùng analysis làm ngữ cảnh.
+- UI hiển thị cảnh báo claim rủi ro.
+- Test contract cover response shape.
 ```
 
 ---
 
-## Phase 3 — Video Prompt Kit cho Kling / Pika / Runway
+## Phase 3 — Supabase Foundation: Auth, Postgres, Project History, Usage
 
 ### Mục tiêu
 
-Sinh prompt video tốt cho các AI video generator, nhưng chưa cần gọi API tạo video thật.
+Trước khi gọi video API tốn tiền, app cần có nền tảng SaaS tối thiểu bằng Supabase: Auth, Postgres, project history, usage và quota.
 
-Flow mong muốn:
+Flow:
 
 ```text
-Product input + analysis
-→ Shot list
-→ Voiceover
-→ Text overlay
-→ Kling Prompt
-→ Pika Prompt
-→ Runway Prompt
-→ User copy prompt sang tool ngoài
+User đăng nhập
+→ Tạo project sản phẩm
+→ Generate content / analysis / video prompt
+→ Lưu input + output + prompt_version
+→ Track copy events và usage
+→ Áp quota trước khi gọi AI provider
 ```
 
 ### Backend tasks
 
-#### 1. Thêm endpoint video prompt
-
-```http
-POST /api/generate/video-prompts
-```
-
-Response:
-
-```json
-{
-  "video_brief": {
-    "goal": "affiliate conversion",
-    "platform": "TikTok",
-    "duration": 15,
-    "style": "UGC review"
-  },
-  "shot_list": [
-    {
-      "time": "0-3s",
-      "scene": "...",
-      "text_overlay": "..."
-    }
-  ],
-  "voiceover": "...",
-  "text_overlays": [],
-  "kling_prompt": "...",
-  "pika_prompt": "...",
-  "runway_prompt": "...",
-  "negative_prompt": "...",
-  "caption": "...",
-  "hashtags": [],
-  "compliance_warnings": []
-}
-```
-
-#### 2. Prompt riêng cho từng provider
-
-Kling prompt tập trung vào:
-
 ```text
-realistic UGC
-human hand
-product demo
-natural motion
-Vietnamese creator style
-9:16
+- Kết nối Supabase Auth.
+- Dùng Supabase Postgres làm database chính.
+- Tạo migration SQL trong supabase/migrations cho schema mới.
+- Thêm bảng projects.
+- Thêm bảng generations.
+- Thêm bảng generated_items nếu cần query item-level.
+- Thêm bảng copy_events / feedback_events.
+- UsageService đọc usage thật từ database thay vì hardcode/mock.
+- Mỗi generation lưu type, prompt_version, input, output, provider, model, token/cost estimate.
+- Enable RLS cho mọi bảng user-owned.
+- Policy phải dựa trên auth.uid(), không dựa vào user_metadata.
 ```
 
-Pika prompt tập trung vào:
+### Database đề xuất
 
-```text
-short viral motion
-satisfying effect
-fast hook
-simple scene
-```
+```sql
+create table projects (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  product_name text not null,
+  category text,
+  input jsonb not null default '{}',
+  status text not null default 'active',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
 
-Runway prompt tập trung vào:
+create table generations (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  project_id uuid references projects(id),
+  type text not null,
+  provider text,
+  model text,
+  prompt_version text,
+  input jsonb not null default '{}',
+  output jsonb not null default '{}',
+  cost_estimate numeric,
+  created_at timestamptz default now()
+);
 
-```text
-cinematic product ad
-camera direction
-lighting
-composition
-hero shot
+create table copy_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  generation_id uuid references generations(id),
+  item_type text not null,
+  item_id text,
+  created_at timestamptz default now()
+);
 ```
 
 ### Frontend tasks
 
-Thêm tab hoặc section:
-
 ```text
-Video Prompt
-```
-
-Trong section này có:
-
-```text
-Kling Prompt    [Copy]
-Pika Prompt     [Copy]
-Runway Prompt   [Copy]
-Negative Prompt [Copy]
-Shot List
-Voiceover
-Text Overlay
-```
-
-### Không làm trong Phase 3
-
-```text
-Không upload ảnh
-Không gọi Kling/Pika/Runway API
-Không lưu video
-Không polling trạng thái video
+- Login/logout bằng Supabase Auth.
+- Project list.
+- Project detail với generation history.
+- Usage counter.
+- Copy event tracking.
 ```
 
 ### Definition of Done
 
 ```text
-- User nhập sản phẩm
-- Tool sinh video prompt cho Kling/Pika/Runway
-- Prompt có shot list, voiceover, overlay, negative prompt
-- User copy prompt để dùng thủ công ở tool ngoài
+- User đăng nhập được.
+- Mỗi lần generate được lưu vào history.
+- Usage quota hoạt động theo user.
+- User xem lại project và output cũ.
+- Copy events được ghi lại.
+- RLS chặn user đọc/sửa dữ liệu của user khác.
 ```
 
 ---
 
-## Phase 4 — Upload ảnh + Asset Management
+## Phase 4 — Asset Upload + Product Context
 
 ### Mục tiêu
 
-Cho phép user upload ảnh sản phẩm để chuẩn bị cho image-to-video workflow.
+Cho phép user upload ảnh sản phẩm vào Supabase Storage để chuẩn bị cho image-to-video workflow và giúp prompt/video brief cụ thể hơn.
 
-Flow mong muốn:
+Flow:
 
 ```text
 Upload ảnh sản phẩm
 → Lưu Supabase Storage
 → Gắn asset vào project
-→ Prompt video tham chiếu ảnh sản phẩm
+→ AI phân tích ảnh
+→ Video prompt tham chiếu ảnh thật
 ```
 
 ### Frontend tasks
 
-Thêm upload input:
-
 ```text
-Ảnh sản phẩm
-Ảnh lifestyle tham khảo
-Ảnh before/after nếu có
-```
-
-Giới hạn MVP:
-
-```text
-1-5 ảnh
-jpg/png/webp
-max 5MB mỗi ảnh
+- Upload 1-5 ảnh sản phẩm.
+- Preview ảnh.
+- Chọn ảnh chính.
+- Gắn ảnh vào project hiện tại.
+- Hiển thị warning nếu ảnh có text/logo khó đọc hoặc chất lượng thấp.
 ```
 
 ### Backend tasks
 
-Thêm route:
-
-```http
-POST /api/assets/upload
-GET /api/assets/{asset_id}
-DELETE /api/assets/{asset_id}
+```text
+- POST /api/assets/upload.
+- GET /api/assets/{asset_id}.
+- DELETE /api/assets/{asset_id}.
+- Lưu file vào Supabase Storage.
+- Lưu metadata vào bảng assets trong Supabase Postgres.
+- Dùng Supabase Storage policies/RLS để chỉ owner truy cập asset riêng.
+- Optional: image analysis prompt để mô tả sản phẩm, màu sắc, nền, logo, text, bối cảnh phù hợp.
 ```
 
 ### Storage
 
-Dùng Supabase Storage:
-
 ```text
 bucket: product-assets
-path: users/{user_id}/projects/{project_id}/{file_name}
+path: users/{user_id}/projects/{project_id}/{asset_id}-{file_name}
 ```
 
 ### Database đề xuất
@@ -604,84 +404,204 @@ path: users/{user_id}/projects/{project_id}/{file_name}
 ```sql
 create table assets (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid,
-  project_id uuid,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  project_id uuid references projects(id),
   type text not null,
-  url text not null,
+  storage_path text not null,
+  public_url text,
   mime_type text,
   file_size int,
   width int,
   height int,
+  analysis jsonb,
   created_at timestamptz default now()
 );
-```
-
-### Image analysis agent
-
-Sau khi upload, có thể phân tích:
-
-```text
-Ảnh sản phẩm có nền gì?
-Màu sắc sản phẩm?
-Có chữ/logo không?
-Sản phẩm phù hợp bối cảnh nào?
-Ảnh có đủ chất lượng để gen video không?
 ```
 
 ### Definition of Done
 
 ```text
-- User upload được ảnh sản phẩm
-- Ảnh được lưu storage
-- Asset gắn được vào project/input
-- Video prompt có câu tham chiếu ảnh đã upload
+- User upload được ảnh.
+- Ảnh được lưu vào storage.
+- Asset metadata được lưu trong Supabase Postgres.
+- Asset gắn với project.
+- Prompt/video brief dùng được asset context.
+- Không dùng before/after hoặc hình ảnh nhạy cảm để tạo claim rủi ro.
 ```
 
 ---
 
-## Phase 5 — Video Generation Workflow
+## Phase 5 — Video Prompt Kit cho Kling / Pika / Runway / CapCut
 
 ### Mục tiêu
 
-Gọi Kling/Pika/Runway hoặc provider trung gian để tạo video thật.
+Sinh prompt video tốt cho AI video generator, nhưng chưa gọi API tạo video thật. Đây là phase có giá trị ngay vì user có thể copy prompt sang tool ngoài.
 
-Không nên làm phase này trước Phase 3 và Phase 4 vì video API tốn tiền, mất thời gian, cần polling, retry và storage.
+Flow:
+
+```text
+Product input + analysis + assets
+→ Shot list
+→ Voiceover
+→ Text overlays
+→ Kling Prompt
+→ Pika Prompt
+→ Runway Prompt
+→ CapCut/TikTok editing brief
+→ User copy prompt sang tool ngoài
+```
 
 ### Backend tasks
 
-#### 1. Thêm video provider abstraction
+```text
+- POST /api/generate/video-prompts.
+- VideoPromptRequest mở rộng từ product input, có video_style, aspect_ratio, provider_focus.
+- Endpoint chạy Product Analysis trước khi sinh prompt.
+- Nếu có assets, đưa asset context vào prompt.
+- Response có prompt_version và schema rõ ràng.
+```
+
+### Response shape
+
+```json
+{
+  "type": "video-prompts",
+  "prompt_version": "v2",
+  "analysis": {
+    "product_type": "...",
+    "target_customer_insight": "...",
+    "main_pain_points": [],
+    "buying_triggers": [],
+    "content_angles": [],
+    "risk_claims": [],
+    "recommended_video_styles": [],
+    "compliance_notes": []
+  },
+  "video_brief": {
+    "goal": "affiliate conversion",
+    "platform": "TikTok",
+    "duration_seconds": 30,
+    "style": "UGC review",
+    "aspect_ratio": "9:16"
+  },
+  "shot_list": [
+    {
+      "time": "0-3s",
+      "scene": "...",
+      "camera": "...",
+      "motion": "...",
+      "text_overlay": "...",
+      "visual_notes": "..."
+    }
+  ],
+  "voiceover": "...",
+  "text_overlays": [],
+  "kling_prompt": "...",
+  "pika_prompt": "...",
+  "runway_prompt": "...",
+  "capcut_brief": "...",
+  "negative_prompt": "...",
+  "caption": "...",
+  "hashtags": [],
+  "compliance_warnings": []
+}
+```
+
+### Provider prompt focus
 
 ```text
-apps/api/app/providers/video/base.py
-apps/api/app/providers/video/kling.py
-apps/api/app/providers/video/pika.py
-apps/api/app/providers/video/runway.py
+Kling:
+- realistic UGC
+- human hand / product demo
+- natural motion
+- Vietnamese creator style
+- 9:16
+
+Pika:
+- short viral movement
+- satisfying motion
+- simple scene
+- fast hook
+
+Runway:
+- cinematic product ad
+- camera direction
+- lighting
+- composition
+- hero shot
+
+CapCut/TikTok:
+- scene order
+- captions/overlay
+- voiceover
+- product shot placement
+- AI-generated label reminder when needed
 ```
 
-Interface đề xuất:
+### Non-goals
 
-```python
-class VideoProvider:
-    async def create_generation(...):
-        ...
-
-    async def get_status(...):
-        ...
-
-    async def download_result(...):
-        ...
+```text
+- Không gọi Kling/Pika/Runway API.
+- Không tạo video thật.
+- Không polling.
+- Không lưu video output.
 ```
 
-#### 2. Thêm route video generation
+### Definition of Done
 
-```http
-POST /api/video-generations
-GET /api/video-generations/{id}
-GET /api/video-generations
-POST /api/video-generations/{id}/retry
+```text
+- Backend có schema VideoPromptRequest/VideoPromptResponse.
+- UI có field video_style, aspect_ratio, provider_focus.
+- User tạo Video Prompt riêng, không tự động gọi khi tạo Content Kit.
+- UI hiển thị tab Video Prompt.
+- Kling/Pika/Runway/CapCut prompts copy được.
+- Shot list, voiceover, overlays, caption, hashtags hiển thị rõ.
+- Compliance warning đi kèm output.
 ```
 
-#### 3. Thêm trạng thái generation
+---
+
+## Phase 6 — One-Provider Video Generation Pilot
+
+### Mục tiêu
+
+Gọi video API thật với một provider trước để kiểm chứng workflow, chi phí, lỗi, moderation và chất lượng output. Không tích hợp cả Kling/Pika/Runway cùng lúc.
+
+Khuyến nghị chọn một:
+
+```text
+Runway nếu muốn SDK/API lifecycle rõ, task polling và output format ổn.
+Kling nếu muốn tập trung image-to-video/product demo style.
+Pika nếu product cần đúng hệ sinh thái Pika và đã có API access ổn định.
+```
+
+### Flow
+
+```text
+User chọn prompt + asset
+→ Backend tạo video generation job
+→ Provider trả task_id
+→ Backend lưu task_id và status vào Supabase Postgres
+→ Poll/callback cập nhật status
+→ Khi xong, backend download output
+→ Lưu vào Supabase Storage
+→ User preview/download video
+```
+
+### Backend tasks
+
+```text
+- Tạo provider abstraction nhưng implement một provider đầu tiên.
+- POST /api/video-generations.
+- GET /api/video-generations/{id}.
+- GET /api/video-generations.
+- POST /api/video-generations/{id}/retry.
+- Worker/polling job hoặc callback endpoint.
+- Download output URL về Supabase Storage vì URL provider có thể hết hạn.
+- Ghi cost_estimate, provider_job_id, status, failure_reason.
+```
+
+### Status model
 
 ```text
 draft
@@ -690,6 +610,7 @@ generating
 completed
 failed
 cancelled
+expired
 ```
 
 ### Database đề xuất
@@ -697,14 +618,16 @@ cancelled
 ```sql
 create table video_generations (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid,
-  project_id uuid,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  project_id uuid references projects(id),
+  generation_id uuid references generations(id),
   provider text not null,
+  provider_job_id text,
   prompt text not null,
   negative_prompt text,
   input_asset_ids uuid[],
-  provider_job_id text,
   status text not null default 'queued',
+  output_asset_id uuid references assets(id),
   output_url text,
   error_message text,
   cost_estimate numeric,
@@ -715,191 +638,95 @@ create table video_generations (
 
 ### Frontend tasks
 
-Thêm UI:
-
 ```text
-Chọn prompt
-Chọn provider: Kling / Pika / Runway
-Bấm Generate Video
-Xem trạng thái
-Preview video
-Download
-Copy caption
+- Chọn provider pilot.
+- Chọn prompt và asset.
+- Hiển thị cost/credit estimate trước khi generate.
+- Xem trạng thái job.
+- Preview video khi hoàn tất.
+- Download video.
+- Retry nếu failed.
 ```
 
 ### Definition of Done
 
 ```text
-- User chọn provider và prompt
-- Backend tạo video generation job
-- UI xem được trạng thái
-- Khi xong, user preview/download video
+- Một provider video chạy được end-to-end.
+- Có quota trước khi tạo job.
+- Output video được lưu trong Supabase Storage.
+- Có status/retry/error handling.
+- Không mất output khi provider URL hết hạn.
 ```
 
 ---
 
-## Phase 6 — Project History + Analytics + Monetization
+## Phase 7 — Monetization + Scale
 
 ### Mục tiêu
 
-Biến tool từ demo thành SaaS nhỏ có lưu lịch sử, đo usage và có gói trả phí.
+Biến tool từ demo thành SaaS nhỏ có gói trả phí, batch workflow, analytics và lợi thế riêng cho TikTok Shop.
 
-### Project entity
+### Usage / quota đề xuất
 
-```sql
-create table projects (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid,
-  name text not null,
-  product_name text not null,
-  category text,
-  price text,
-  target_audience text,
-  input jsonb,
-  status text default 'active',
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
+```text
+Free:
+- 20 content kits/tháng
+- 20 product analyses/tháng
+- 10 video prompts/tháng
+- Không có video generation thật
+
+Starter:
+- 300 content kits/tháng
+- 300 product analyses/tháng
+- 100 video prompts/tháng
+- Lưu project
+- Export CapCut/TikTok brief
+
+Pro:
+- 2,000 content kits/tháng
+- 500 video prompts/tháng
+- Video generation pilot credits
+- Batch generate
+- Analytics
+- Winning prompt memory
 ```
 
-### Generation entity
+### Scale features
 
-```sql
-create table generations (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid,
-  project_id uuid,
-  type text not null,
-  prompt_version text,
-  input jsonb,
-  output jsonb,
-  created_at timestamptz default now()
-);
+```text
+- Batch generate: 1 sản phẩm → 30 video ideas.
+- Prompt variants: soft sell, hard sell, UGC review, problem-solution, unboxing, comparison, lifestyle, viral hook.
+- Winning prompt memory: user đánh dấu output tốt để ưu tiên pattern đã thắng.
+- Compliance mode theo ngành.
+- TikTok Shop / CapCut export pack.
+- Multi-provider video routing sau khi provider pilot ổn định.
 ```
 
 ### Analytics events
 
-Mở rộng tracking:
-
 ```text
+generate_product_analysis
+generate_content_kit
+generate_video_prompt
+generate_video
 copy_hook
 copy_script
 copy_caption
 copy_video_prompt
-generate_content_kit
-generate_video_prompt
-generate_video
 download_video
 feedback_good
 feedback_bad
 ```
 
-### Usage / quota
-
-Gợi ý quota:
-
-```text
-Free:
-- 20 content kits/tháng
-- Không có video generation
-
-Starter:
-- 300 content kits/tháng
-- 50 video prompts/tháng
-- Lưu project
-
-Pro:
-- 2,000 content kits/tháng
-- Video provider integration
-- Batch generate
-- Analytics
-```
-
 ### Definition of Done
 
 ```text
-- User lưu được project
-- Xem lại lịch sử generation
-- Có usage counter
-- Có giới hạn quota theo plan
-- Có analytics event cơ bản
-```
-
----
-
-## Phase 7 — Scale thành tool mạnh hơn
-
-### Mục tiêu
-
-Tạo lợi thế cạnh tranh so với tool viết content chung chung.
-
-### Tính năng nâng cấp
-
-#### 1. Batch generate
-
-```text
-1 sản phẩm → 30 video ideas
-```
-
-#### 2. Prompt variants
-
-```text
-Soft sell
-Hard sell
-UGC review
-Problem-solution
-Before-after safe
-Unboxing
-Comparison
-Lifestyle
-Viral hook
-```
-
-#### 3. Winning prompt memory
-
-Cho user đánh dấu output hiệu quả:
-
-```text
-High CTR
-High copy rate
-High conversion
-Good retention
-```
-
-Sau đó agent ưu tiên pattern đã thắng.
-
-#### 4. TikTok Shop compliance mode
-
-Tối ưu riêng cho các nhóm rủi ro:
-
-```text
-mỹ phẩm
-sức khỏe
-giảm cân
-tài chính
-mẹ và bé
-```
-
-#### 5. CapCut export pack
-
-MVP chưa cần tích hợp CapCut API. Chỉ cần export package:
-
-```text
-video clips
-voiceover text
-overlay text
-caption
-hashtag
-shot list
-```
-
-### Definition of Done
-
-```text
-- Tool tạo được nhiều biến thể nội dung
-- Có memory cho output hiệu quả
-- Có compliance mode theo ngành
-- Có export pack hỗ trợ dựng trên CapCut
+- Có plan/quota rõ.
+- Có billing hoặc manual payment workflow.
+- Có analytics dashboard cơ bản.
+- Có batch generation.
+- Có prompt memory.
+- Có export pack hỗ trợ TikTok/CapCut workflow.
 ```
 
 ---
@@ -907,80 +734,47 @@ shot list
 ## Thứ tự ưu tiên khuyến nghị
 
 ```text
-1. Phase 1: Content Kit all-in-one
-2. Phase 2: Product Analysis + Compliance
-3. Phase 3: Video Prompt Kit
-4. Phase 4: Upload ảnh
-5. Phase 5: Video Generation
-6. Phase 6: Project history + usage
-7. Phase 7: Scale features
+1. Phase 1: Text Content Kit MVP
+2. Phase 2: Product Analysis + Compliance Agent
+3. Phase 3: Supabase Auth + Postgres + Project History + Usage
+4. Phase 4: Supabase Storage + Asset Upload + Product Context
+5. Phase 5: Video Prompt Kit
+6. Phase 6: One-Provider Video Generation Pilot
+7. Phase 7: Monetization + Scale
 ```
 
----
-
-## MVP 7 ngày đầu
-
-### Ngày 1
+## Việc nên làm ngay trong repo
 
 ```text
-Thêm /api/generate/content-kit
-Thêm ContentKitResponse schema
-Thêm build_content_kit_prompt
+1. Chuẩn hóa chỉ còn một roadmap file: docs/ROADMAP.md.
+2. Xóa hoặc rename docs/roadmap.md vì Windows đang bị conflict tên file chỉ khác hoa/thường.
+3. Merge/hoàn thiện Phase 2 contract tests.
+4. Hoàn thiện Phase 5 video prompt tests.
+5. Đổi README/.env.example cho khớp với provider thật hoặc khôi phục mock provider.
+6. Thêm Structured Outputs cho OpenAI response schema.
+7. Chuẩn bị Supabase migrations cho projects, generations, assets, copy_events, video_generations trước khi làm video API thật.
+8. Enable RLS và viết policies cho mọi bảng user-owned.
+9. Tạo `docs/phases/` và `docs/features/`, rồi chuyển tài liệu phase/feature đã hoàn thành sang các file `.md` riêng.
 ```
 
-### Ngày 2
+## MVP tiếp theo
+
+Trong 7-10 ngày tiếp theo, mục tiêu thực dụng là:
 
 ```text
-Thêm generate_content_kit trong OpenAIProvider và AIService
-Parse JSON output ổn định
-Test API bằng payload serum vitamin C
+- Phase 2 ổn định: ProductAnalysisRequest, tests, docs.
+- Phase 5 video prompt thủ công chạy end-to-end.
+- Có UI copy prompt cho Kling/Pika/Runway/CapCut.
+- Có compliance warnings rõ trong Content Kit và Video Prompt.
+- Có project/generation history tối thiểu hoặc ít nhất schema migration sẵn sàng.
 ```
 
-### Ngày 3
-
-```text
-Thêm generateContentKit trong frontend api-client
-Cập nhật use-generation
-Đổi button thành Tạo Content Kit
-```
-
-### Ngày 4
-
-```text
-Tạo ContentKitResults component
-Hiển thị section: summary, angles, hooks, scripts, captions, hashtags, CTAs, calendar
-```
-
-### Ngày 5
-
-```text
-Thêm copy button cho từng item
-Track copy event theo content type
-Thêm error state frontend
-```
-
-### Ngày 6
-
-```text
-Tinh chỉnh prompt để output bớt chung chung
-Thêm safety wording cho mỹ phẩm/sức khỏe/tài chính
-Test 5 sản phẩm mẫu
-```
-
-### Ngày 7
-
-```text
-Dọn code
-Update README demo flow
-Chuẩn bị demo MVP
-```
-
-Sau 7 ngày, app cần đạt:
+Sau mốc này, app phải demo được:
 
 ```text
 Nhập sản phẩm
-→ Gọi OpenAI thật
+→ AI phân tích sản phẩm và rủi ro claim
 → Tạo Content Kit đầy đủ
-→ Copy được nội dung
-→ Demo được cho affiliate/TikTok Shop seller
+→ Tạo Video Prompt Kit
+→ Copy prompt/content để dùng với TikTok Shop, CapCut, Kling, Pika hoặc Runway
 ```

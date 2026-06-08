@@ -55,5 +55,7 @@ def test_generate_content_kit_returns_structured_response():
     data = response.json()
     assert data["type"] == "content-kit"
     assert data["analysis"]["product_type"] == "Beauty serum"
+    assert data["analysis"]["risk_claims"] == ["Avoid guaranteed whitening claims"]
+    assert data["analysis"]["recommended_video_styles"] == ["Routine demo"]
     assert data["hooks"][0]["id"] == "hook-1"
     assert data["calendar"][0]["day"] == 1

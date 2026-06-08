@@ -2,11 +2,12 @@ from fastapi.testclient import TestClient
 
 from app.api.deps import get_ai_service
 from app.main import app
-from app.schemas.analysis import ProductAnalysisResponse
+from app.schemas.analysis import ProductAnalysisRequest, ProductAnalysisResponse
 
 
 class FakeAIService:
     async def analyze_product(self, prompt, payload):
+        assert isinstance(payload, ProductAnalysisRequest)
         return ProductAnalysisResponse(
             product_type="Beauty serum",
             target_customer_insight="Office women want fresh-looking skin without a sticky morning routine.",
@@ -35,5 +36,15 @@ def test_analyze_product_returns_structured_response():
 
     assert response.status_code == 200
     data = response.json()
+    assert set(data) == {
+        "product_type",
+        "target_customer_insight",
+        "main_pain_points",
+        "buying_triggers",
+        "content_angles",
+        "risk_claims",
+        "recommended_video_styles",
+        "compliance_notes",
+    }
     assert data["product_type"] == "Beauty serum"
     assert "Avoid trắng sau 3 ngày" in data["risk_claims"]

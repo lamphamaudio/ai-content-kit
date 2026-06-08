@@ -1,6 +1,6 @@
 import json
 
-from app.schemas.analysis import ProductAnalysisResponse
+from app.schemas.analysis import ProductAnalysisRequest, ProductAnalysisResponse
 from app.schemas.generation import GenerateRequest
 
 
@@ -15,7 +15,7 @@ class PromptService:
             f"Benefits: {payload.key_benefits or 'not provided'}. Tone: {payload.tone}."
         )
 
-    def build_product_analysis_prompt(self, payload: GenerateRequest) -> str:
+    def build_product_analysis_prompt(self, payload: ProductAnalysisRequest | GenerateRequest) -> str:
         language = payload.language or "vi"
         return f"""
 You are a Vietnamese TikTok Shop affiliate strategist.
@@ -213,5 +213,180 @@ Return exactly this JSON shape:
       "cta": "string"
     }}
   ]
+}}
+""".strip()
+
+    def build_video_prompt_kit_prompt(
+        self,
+        payload: GenerateRequest,
+        analysis: ProductAnalysisResponse | None = None,
+    ) -> str:
+        analysis_context = "Not provided"
+        if analysis:
+            analysis_context = json.dumps(analysis.model_dump(), ensure_ascii=False, indent=2)
+
+        aspect_ratio = getattr(payload, "aspect_ratio", "9:16") or "9:16"
+        video_style = getattr(payload, "video_style", None) or "Not provided"
+        provider_focus = getattr(payload, "provider_focus", None) or "all"
+
+        return f"""
+You are a senior Vietnamese TikTok Shop affiliate video strategist and AI video prompt engineer.
+
+Create a copy-ready Video Prompt Kit for external AI video tools and editing workflows: Kling, Pika, Runway, and CapCut/TikTok.
+
+Important scope:
+- Do not call Kling, Pika, Runway, CapCut, or TikTok APIs.
+- Do not generate actual videos.
+- Only produce structured prompts that a user can manually copy into external AI video tools.
+
+Product information:
+- Product name: {payload.product_name}
+- Category: {payload.category}
+- Price: {payload.price or "Not provided"}
+- Target audience: {payload.target_audience or "Not provided"}
+- Customer pain points: {payload.pain_points or "Not provided"}
+- Key benefits: {payload.key_benefits or "Not provided"}
+- USP / differentiation: {payload.usp or "Not provided"}
+- Competitor or alternative: {payload.competitor_or_alternative or "Not provided"}
+- Selling intensity: {payload.selling_intensity}
+- Platform: {payload.platform}
+- Preferred duration seconds: {payload.duration_seconds or "Not provided"}
+- Desired CTA: {payload.cta or "Not provided"}
+- Compliance notes from user: {payload.compliance_notes or "Not provided"}
+- Output language: {payload.language or "vi"}
+- Tone: {payload.tone}
+- Requested video style: {video_style}
+- Aspect ratio: {aspect_ratio}
+- Provider focus: {provider_focus}
+
+Product analysis context:
+{analysis_context}
+
+Output requirements:
+Generate a structured JSON object with:
+1. video_brief
+2. shot_list
+3. voiceover
+4. text_overlays
+5. kling_prompt
+6. pika_prompt
+7. runway_prompt
+8. capcut_brief
+9. negative_prompt
+10. caption
+11. hashtags
+12. compliance_warnings
+
+Video strategy:
+- The goal is affiliate conversion for TikTok Shop or short-form commerce.
+- Make the output practical for Vietnamese creators.
+- The video prompts must be copy-ready for users to paste into Kling, Pika, and Runway.
+- The CapCut brief must be copy-ready for users to edit manually in CapCut or TikTok's native workflow.
+- Use the requested output language, defaulting to Vietnamese when not provided.
+- Match the requested tone and selling intensity.
+- If duration_seconds is provided, make the voiceover and shot timing fit that duration.
+
+Shot list requirements:
+- Generate 4-8 shots.
+- Each shot must include time, scene, camera, motion, text_overlay, and visual_notes.
+- Keep shots practical for AI video generation and short-form product selling.
+- Text overlays must be short and TikTok-friendly.
+
+Kling prompt quality rules:
+- Focus on realistic UGC.
+- Include human hand and natural product demo when relevant.
+- Use Vietnamese creator style.
+- Specify vertical 9:16.
+- Emphasize natural motion and a clearly visible product.
+- Mention realistic skin and hands when relevant.
+- Avoid over-cinematic language.
+- Make it suitable for image-to-video or text-to-video.
+
+Pika prompt quality rules:
+- Focus on short viral motion.
+- Include satisfying visual movement.
+- Use a fast hook.
+- Keep the scene simple.
+- Show a clear product moment.
+- Use energetic short-form style.
+- Prefer an easy-to-generate scene.
+
+Runway prompt quality rules:
+- Focus on a cinematic product ad.
+- Include camera direction, lighting, and composition.
+- Include a hero shot.
+- Use smooth camera movement.
+- Write a premium visual description.
+
+CapCut/TikTok brief requirements:
+- Give a concise edit plan for a human editor.
+- Include scene order, overlay text, voiceover pacing, product shot placement, and transition notes.
+- Mention AI-generated content labeling when the brief includes realistic AI-generated visuals.
+
+Negative prompt requirements:
+Include warnings against:
+- blurry product
+- distorted hands
+- extra fingers
+- deformed face
+- unreadable text
+- wrong logo
+- watermark
+- flickering
+- low resolution
+- overexposed lighting
+- exaggerated before/after
+- medical, beauty, finance, health, weight loss, baby/mom, supplements, or skincare overclaims when relevant
+
+Compliance:
+- Respect risk_claims and compliance_notes from the product analysis context.
+- Do not make exaggerated claims.
+- Do not promise guaranteed results.
+- For beauty, health, weight loss, finance, baby/mom, supplements, and skincare products, use cautious language like "hỗ trợ", "giúp da trông", "có thể phù hợp", "tham khảo".
+- Do not use phrases such as "trị dứt điểm", "hiệu quả 100%", "trắng bật tone sau 3 ngày", "cam kết khỏi", "chắc chắn kiếm tiền".
+- Include specific compliance_warnings when the category or analysis suggests risk.
+
+Specific output constraints:
+- shot_list should have 4-8 shots.
+- Each shot must have time, scene, camera, motion, text_overlay, visual_notes.
+- Voiceover should match requested duration_seconds if provided.
+- Text overlays should be short and TikTok-friendly.
+- Hashtags should have 8-15 items.
+- Output language should follow payload.language, default Vietnamese.
+- Prompt should be copy-ready for users to paste into Kling/Pika/Runway.
+
+Return only valid JSON.
+No markdown fences.
+No prose outside JSON.
+
+Return exactly this JSON shape:
+{{
+  "video_brief": {{
+    "goal": "affiliate conversion",
+    "platform": "TikTok",
+    "duration_seconds": 30,
+    "style": "UGC review",
+    "aspect_ratio": "9:16"
+  }},
+  "shot_list": [
+    {{
+      "time": "0-3s",
+      "scene": "string",
+      "camera": "string",
+      "motion": "string",
+      "text_overlay": "string",
+      "visual_notes": "string"
+    }}
+  ],
+  "voiceover": "string",
+  "text_overlays": ["string"],
+  "kling_prompt": "string",
+  "pika_prompt": "string",
+  "runway_prompt": "string",
+  "capcut_brief": "string",
+  "negative_prompt": "string",
+  "caption": "string",
+  "hashtags": ["string"],
+  "compliance_warnings": ["string"]
 }}
 """.strip()

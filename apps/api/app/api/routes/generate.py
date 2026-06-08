@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.deps import get_ai_service, get_prompt_service, get_usage_service
 from app.schemas.generation import ContentKitRequest, ContentKitResponse, GenerateRequest, GenerateResponse
+from app.schemas.video_prompt import VideoPromptRequest, VideoPromptResponse
 from app.services.ai_service import AIService
 from app.services.prompt_service import PromptService
 from app.services.usage_service import UsageService
@@ -56,3 +57,23 @@ async def content_kit(
     content_kit = await ai.generate_content_kit(prompt=prompt, payload=payload, prompt_version=prompts.version)
     content_kit.analysis = analysis
     return content_kit
+
+
+@router.post("/video-prompts", response_model=VideoPromptResponse)
+async def video_prompts(
+    payload: VideoPromptRequest,
+    ai: AIService = Depends(get_ai_service),
+    prompts: PromptService = Depends(get_prompt_service),
+    usage: UsageService = Depends(get_usage_service),
+):
+    usage.check_quota(user_id=payload.user_id)
+    analysis_prompt = prompts.build_product_analysis_prompt(payload)
+    analysis = await ai.analyze_product(prompt=analysis_prompt, payload=payload)
+    video_prompt = prompts.build_video_prompt_kit_prompt(payload, analysis)
+    result = await ai.generate_video_prompts(
+        prompt=video_prompt,
+        payload=payload,
+        prompt_version=prompts.version,
+    )
+    result.analysis = analysis
+    return result

@@ -3,12 +3,14 @@
 import { useMemo, useState } from "react";
 import { ProductForm } from "@/components/product-form";
 import { useGeneration } from "@/hooks/use-generation";
-import type { ContentKitResponse } from "@/types/generation";
+import { useVideoPrompts } from "@/hooks/use-video-prompts";
+import type { ContentKitResponse, VideoPromptResponse } from "@/types/generation";
 
 type Language = "vi" | "en";
-type TabKey = "analysis" | "angles" | "hooks" | "scripts" | "captions" | "hashtags" | "ctas" | "calendar";
+type ContentTabKey = "analysis" | "angles" | "hooks" | "scripts" | "captions" | "hashtags" | "ctas" | "calendar";
+type TabKey = ContentTabKey | "videoPrompt";
 
-const tabs: Array<{ key: TabKey; vi: string; en: string }> = [
+const tabs: Array<{ key: ContentTabKey; vi: string; en: string }> = [
   { key: "analysis", vi: "AI phân tích", en: "AI Analysis" },
   { key: "angles", vi: "Góc bán", en: "Angles" },
   { key: "hooks", vi: "Hook", en: "Hooks" },
@@ -59,6 +61,9 @@ const copy = {
         sellingIntensity: "Phong cách bán hàng",
         platform: "Nền tảng",
         duration: "Độ dài video",
+        videoStyle: "Video style",
+        aspectRatio: "Tỷ lệ khung hình",
+        providerFocus: "Tool ưu tiên",
         cta: "CTA mong muốn",
         ctaPlaceholder: "Ví dụ: Xem sản phẩm ở giỏ hàng",
         complianceNotes: "Điều cần tránh / compliance notes",
@@ -73,7 +78,9 @@ const copy = {
         playful: "Hài hước, bắt trend"
       },
       submit: "Tạo full content kit",
-      loading: "Đang tạo nội dung..."
+      videoSubmit: "Tạo Video Prompt",
+      loading: "Đang tạo nội dung...",
+      videoLoading: "Đang tạo video prompt..."
     }
   },
   en: {
@@ -115,6 +122,9 @@ const copy = {
         sellingIntensity: "Selling style",
         platform: "Platform",
         duration: "Video length",
+        videoStyle: "Video style",
+        aspectRatio: "Aspect ratio",
+        providerFocus: "Provider focus",
         cta: "Desired CTA",
         ctaPlaceholder: "Example: View the product in the cart",
         complianceNotes: "Things to avoid / compliance notes",
@@ -129,7 +139,9 @@ const copy = {
         playful: "Playful, trend-aware"
       },
       submit: "Generate full content kit",
-      loading: "Generating content..."
+      videoSubmit: "Generate Video Prompt",
+      loading: "Generating content...",
+      videoLoading: "Generating video prompt..."
     }
   }
 };
@@ -163,15 +175,16 @@ export default function HomePage() {
   const [language, setLanguage] = useState<Language>("vi");
   const [activeTab, setActiveTab] = useState<TabKey>("angles");
   const { contentKit, error, isLoading, generate } = useGeneration();
+  const { videoPrompts, videoError, isVideoLoading, generateVideoPromptKit } = useVideoPrompts();
   const t = copy[language];
 
   const generatedGroupCount = useMemo(() => {
-    if (!contentKit) return 0;
-    return tabs.filter((tab) => {
+    const contentCount = contentKit ? tabs.filter((tab) => {
       const value = contentKit[tab.key];
       return Array.isArray(value) && value.length > 0;
-    }).length;
-  }, [contentKit]);
+    }).length : 0;
+    return contentCount + (videoPrompts ? 1 : 0);
+  }, [contentKit, videoPrompts]);
 
   return (
     <main className="min-h-screen bg-background text-on-background">
@@ -209,7 +222,16 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
           <div className="lg:col-span-5">
-            <ProductForm copy={t.form} onSubmit={generate} isLoading={isLoading} />
+            <ProductForm
+              copy={t.form}
+              onSubmit={generate}
+              onGenerateVideoPrompts={async (payload) => {
+                await generateVideoPromptKit(payload);
+                setActiveTab("videoPrompt");
+              }}
+              isLoading={isLoading}
+              isVideoLoading={isVideoLoading}
+            />
           </div>
           <div className="lg:col-span-7">
             <div className="flex min-h-[668px] flex-col rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm lg:sticky lg:top-20">
@@ -231,33 +253,42 @@ export default function HomePage() {
                 </div>
               ) : null}
 
-              {contentKit ? (
+              {contentKit || videoPrompts ? (
                 <div className="custom-scrollbar flex gap-2 overflow-x-auto border-b border-outline-variant px-6 py-3">
-                  {tabs.filter((tab) => tab.key !== "analysis" || contentKit.analysis).map((tab) => (
+                  {contentKit ? tabs.filter((tab) => tab.key !== "analysis" || contentKit.analysis).map((tab) => (
                     <button key={tab.key} className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition ${activeTab === tab.key ? "bg-primary text-white" : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"}`} onClick={() => setActiveTab(tab.key)}>
                       {language === "vi" ? tab.vi : tab.en}
                     </button>
-                  ))}
+                  )) : null}
+                  {videoPrompts ? (
+                    <button className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition ${activeTab === "videoPrompt" ? "bg-primary text-white" : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"}`} onClick={() => setActiveTab("videoPrompt")}>
+                      Video Prompt
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
 
               <div className="custom-scrollbar relative h-[582px] flex-grow overflow-y-auto p-6">
-                {isLoading ? (
+                {isLoading || isVideoLoading ? (
                   <div className="grid h-full place-items-center rounded-xl border-2 border-dashed border-outline-variant/60 bg-surface/60 text-center text-sm text-on-surface-variant">
                     <div className="glass-panel rounded-2xl p-8">
                       <div className="mx-auto mb-6 flex h-16 w-16 animate-pulse items-center justify-center rounded-full bg-surface-container-high text-primary">
                         <span className="material-symbols-outlined text-[32px]">auto_awesome</span>
                       </div>
-                      {t.loading}
+                      {isVideoLoading ? t.form.videoLoading : t.loading}
                     </div>
                   </div>
-                ) : error ? (
+                ) : error || videoError ? (
                   <div className="rounded-xl border border-error/30 bg-error-container p-5 text-on-error-container">
                     <h3 className="font-semibold">{t.errorTitle}</h3>
-                    <p className="mt-2 text-sm">{error}</p>
+                    <p className="mt-2 text-sm">{error || videoError}</p>
                   </div>
-                ) : contentKit ? (
+                ) : activeTab === "videoPrompt" && videoPrompts ? (
+                  <VideoPromptTab videoPrompts={videoPrompts} copyLabel={t.copyButton} copiedLabel={t.copiedButton} />
+                ) : contentKit && activeTab !== "videoPrompt" ? (
                   <ContentKitTab tab={activeTab} kit={contentKit} language={language} copyLabel={t.copyButton} copiedLabel={t.copiedButton} />
+                ) : videoPrompts ? (
+                  <VideoPromptTab videoPrompts={videoPrompts} copyLabel={t.copyButton} copiedLabel={t.copiedButton} />
                 ) : (
                   <div className="relative grid h-full place-items-center overflow-hidden rounded-xl border-2 border-dashed border-outline-variant/60 bg-surface/40 p-6 text-center">
                     <div className="glass-panel relative z-10 max-w-md rounded-2xl p-8">
@@ -282,7 +313,61 @@ function listBody(items: string[]) {
   return items.map((item) => `- ${item}`).join("\n");
 }
 
-function ContentKitTab({ tab, kit, language, copyLabel, copiedLabel }: { tab: TabKey; kit: ContentKitResponse; language: Language; copyLabel: string; copiedLabel: string }) {
+function VideoPromptTab({ videoPrompts, copyLabel, copiedLabel }: { videoPrompts: VideoPromptResponse; copyLabel: string; copiedLabel: string }) {
+  const brief = videoPrompts.video_brief;
+  const briefBody = [
+    `Goal: ${brief.goal}`,
+    `Platform: ${brief.platform}`,
+    `Duration: ${brief.duration_seconds}s`,
+    `Style: ${brief.style}`,
+    `Aspect ratio: ${brief.aspect_ratio}`
+  ].join("\n");
+
+  return (
+    <div className="grid gap-3">
+      {videoPrompts.compliance_warnings.length > 0 ? (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950">
+          <div className="flex items-center gap-2 font-semibold">
+            <span className="material-symbols-outlined text-[20px]">warning</span>
+            Compliance warnings
+          </div>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-sm leading-6">
+            {videoPrompts.compliance_warnings.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}
+          </ul>
+        </div>
+      ) : null}
+      <CopyableCard title="Video brief" body={briefBody} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+      <CopyableCard title="Kling Prompt" body={videoPrompts.kling_prompt} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+      <CopyableCard title="Pika Prompt" body={videoPrompts.pika_prompt} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+      <CopyableCard title="Runway Prompt" body={videoPrompts.runway_prompt} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+      <CopyableCard title="CapCut / TikTok Brief" body={videoPrompts.capcut_brief} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+      <CopyableCard title="Negative Prompt" body={videoPrompts.negative_prompt} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+      <CopyableCard title="Voiceover" body={videoPrompts.voiceover} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+      <div className="grid gap-3">
+        {videoPrompts.shot_list.map((shot, index) => (
+          <CopyableCard
+            key={`${shot.time}-${index}`}
+            title={shot.time}
+            body={[
+              `Scene: ${shot.scene}`,
+              `Camera: ${shot.camera ?? ""}`,
+              `Motion: ${shot.motion ?? ""}`,
+              `Text overlay: ${shot.text_overlay ?? ""}`,
+              `Visual notes: ${shot.visual_notes ?? ""}`
+            ].join("\n")}
+            copyLabel={copyLabel}
+            copiedLabel={copiedLabel}
+          />
+        ))}
+      </div>
+      <CopyableCard title="Text overlays" body={listBody(videoPrompts.text_overlays)} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+      <CopyableCard title="Caption" body={videoPrompts.caption} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+      <CopyableCard title="Hashtags" body={videoPrompts.hashtags.join(" ")} copyLabel={copyLabel} copiedLabel={copiedLabel} />
+    </div>
+  );
+}
+
+function ContentKitTab({ tab, kit, language, copyLabel, copiedLabel }: { tab: ContentTabKey; kit: ContentKitResponse; language: Language; copyLabel: string; copiedLabel: string }) {
   if (tab === "analysis") {
     if (!kit.analysis) return null;
     const labels = language === "vi" ? {

@@ -14,4 +14,7 @@ export type ProductInput = {
   compliance_notes?: string;
   language?: string;
   tone: string;
+  video_style?: string;
+  aspect_ratio?: string;
+  provider_focus?: string;
 };

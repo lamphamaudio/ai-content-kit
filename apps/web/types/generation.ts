@@ -74,3 +74,38 @@ export type ContentKitResponse = {
   calendar: CalendarItem[];
   raw_items?: GeneratedItem[] | null;
 };
+
+export type VideoBrief = {
+  goal: string;
+  platform: string;
+  duration_seconds: number;
+  style: string;
+  aspect_ratio: string;
+};
+
+export type ShotItem = {
+  time: string;
+  scene: string;
+  camera?: string | null;
+  motion?: string | null;
+  text_overlay?: string | null;
+  visual_notes?: string | null;
+};
+
+export type VideoPromptResponse = {
+  type: "video-prompts";
+  prompt_version: string;
+  analysis?: ProductAnalysisResponse | null;
+  video_brief: VideoBrief;
+  shot_list: ShotItem[];
+  voiceover: string;
+  text_overlays: string[];
+  kling_prompt: string;
+  pika_prompt: string;
+  runway_prompt: string;
+  capcut_brief: string;
+  negative_prompt: string;
+  caption: string;
+  hashtags: string[];
+  compliance_warnings: string[];
+};

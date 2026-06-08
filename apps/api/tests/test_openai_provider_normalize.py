@@ -39,3 +39,27 @@ def test_normalize_product_analysis_converts_string_fields_to_lists():
     assert normalized["risk_claims"] == ["Avoid guaranteed whitening claims"]
     assert normalized["recommended_video_styles"] == ["Routine demo"]
     assert normalized["compliance_notes"] == []
+
+
+def test_normalize_video_prompts_adds_capcut_brief():
+    provider = OpenAIProvider.__new__(OpenAIProvider)
+    data = {
+        "video_brief": {"duration_seconds": 15},
+        "shot_list": [{"time": "0-3s", "scene": "Show product"}],
+        "voiceover": "Demo voiceover",
+        "text_overlays": "Overlay",
+        "kling_prompt": "Kling prompt",
+        "pika_prompt": "Pika prompt",
+        "runway_prompt": "Runway prompt",
+        "negative_prompt": "No blur",
+        "caption": "Caption",
+        "hashtags": "#demo",
+        "compliance_warnings": None,
+    }
+
+    normalized = provider._normalize_video_prompts(data)
+
+    assert normalized["capcut_brief"] == ""
+    assert normalized["text_overlays"] == ["Overlay"]
+    assert normalized["hashtags"] == ["#demo"]
+    assert normalized["compliance_warnings"] == []

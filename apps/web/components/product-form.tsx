@@ -24,6 +24,9 @@ type ProductFormCopy = {
     sellingIntensity: string;
     platform: string;
     duration: string;
+    videoStyle: string;
+    aspectRatio: string;
+    providerFocus: string;
     cta: string;
     ctaPlaceholder: string;
     complianceNotes: string;
@@ -38,7 +41,9 @@ type ProductFormCopy = {
     playful: string;
   };
   submit: string;
+  videoSubmit: string;
   loading: string;
+  videoLoading: string;
 };
 
 const initialState: ProductInput = {
@@ -53,6 +58,9 @@ const initialState: ProductInput = {
   selling_intensity: "balanced",
   platform: "tiktok",
   duration_seconds: 30,
+  video_style: "UGC review",
+  aspect_ratio: "9:16",
+  provider_focus: "all",
   cta: "",
   compliance_notes: "",
   language: "vi",
@@ -80,6 +88,9 @@ const defaultCopy: ProductFormCopy = {
     sellingIntensity: "Phong cách bán hàng",
     platform: "Nền tảng",
     duration: "Độ dài video",
+    videoStyle: "Video style",
+    aspectRatio: "Tỷ lệ khung hình",
+    providerFocus: "Tool ưu tiên",
     cta: "CTA mong muốn",
     ctaPlaceholder: "Ví dụ: Xem sản phẩm ở giỏ hàng",
     complianceNotes: "Điều cần tránh / compliance notes",
@@ -94,17 +105,23 @@ const defaultCopy: ProductFormCopy = {
     playful: "Hài hước, bắt trend"
   },
   submit: "Tạo hook bán hàng",
-  loading: "Đang tạo nội dung..."
+  videoSubmit: "Tạo Video Prompt",
+  loading: "Đang tạo nội dung...",
+  videoLoading: "Đang tạo video prompt..."
 };
 
 export function ProductForm({
   copy = defaultCopy,
   onSubmit,
-  isLoading = false
+  onGenerateVideoPrompts,
+  isLoading = false,
+  isVideoLoading = false
 }: {
   copy?: ProductFormCopy;
   onSubmit: (payload: ProductInput) => void;
+  onGenerateVideoPrompts?: (payload: ProductInput) => void;
   isLoading?: boolean;
+  isVideoLoading?: boolean;
 }) {
   const [form, setForm] = useState<ProductInput>(initialState);
 
@@ -192,6 +209,38 @@ export function ProductForm({
         </div>
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label className={labelClass}>{copy.fields.videoStyle}</label>
+          <select className={`${inputClass} cursor-pointer`} value={form.video_style} onChange={(event) => update("video_style", event.target.value)}>
+            <option value="UGC review">UGC review</option>
+            <option value="Product demo">Product demo</option>
+            <option value="Problem solution">Problem solution</option>
+            <option value="Cinematic product ad">Cinematic product ad</option>
+            <option value="Before after safe">Before after safe</option>
+            <option value="Satisfying motion">Satisfying motion</option>
+          </select>
+        </div>
+        <div>
+          <label className={labelClass}>{copy.fields.aspectRatio}</label>
+          <select className={`${inputClass} cursor-pointer`} value={form.aspect_ratio} onChange={(event) => update("aspect_ratio", event.target.value)}>
+            <option value="9:16">9:16</option>
+            <option value="1:1">1:1</option>
+            <option value="16:9">16:9</option>
+          </select>
+        </div>
+        <div>
+          <label className={labelClass}>{copy.fields.providerFocus}</label>
+          <select className={`${inputClass} cursor-pointer`} value={form.provider_focus} onChange={(event) => update("provider_focus", event.target.value)}>
+            <option value="all">All</option>
+            <option value="kling">Kling</option>
+            <option value="pika">Pika</option>
+            <option value="runway">Runway</option>
+            <option value="capcut">CapCut</option>
+          </select>
+        </div>
+      </div>
+
       <div>
         <label className={labelClass}>{copy.fields.cta}</label>
         <input className={inputClass} placeholder={copy.fields.ctaPlaceholder} value={form.cta} onChange={(event) => update("cta", event.target.value)} />
@@ -221,10 +270,21 @@ export function ProductForm({
         </div>
       </div>
 
-      <button className="ai-magic-btn mt-auto flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3.5 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60" disabled={isLoading}>
-        <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
-        {isLoading ? copy.loading : copy.submit}
-      </button>
+      <div className="mt-auto grid gap-3 sm:grid-cols-2">
+        <button className="ai-magic-btn flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3.5 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60" disabled={isLoading || isVideoLoading}>
+          <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
+          {isLoading ? copy.loading : copy.submit}
+        </button>
+        <button
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary bg-surface-container-lowest px-6 py-3.5 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={!onGenerateVideoPrompts || isLoading || isVideoLoading}
+          type="button"
+          onClick={() => onGenerateVideoPrompts?.(form)}
+        >
+          <span className="material-symbols-outlined text-[20px]">movie</span>
+          {isVideoLoading ? copy.videoLoading : copy.videoSubmit}
+        </button>
+      </div>
     </form>
   );
 }
